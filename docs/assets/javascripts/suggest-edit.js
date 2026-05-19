@@ -2,10 +2,14 @@
   'use strict';
 
   // ── Config ────────────────────────────────────────────────────────────────
-  var WORKER_URL = 'https://wiki-auth-69.galacticliaison.workers.dev/'; // e.g. https://elf-destiny-suggest.yourname.workers.dev
+  var WORKER_URL        = 'https://wiki-auth-69.galacticliaison.workers.dev/';
+  var WORKER_ORIGIN     = 'https://wiki-auth-69.galacticliaison.workers.dev';
+  var DISCORD_CLIENT_ID = '1506415042369945660';
+  var CALLBACK_URL      = 'https://wiki-auth-69.galacticliaison.workers.dev/callback';
 
-  // ── DOM refs ──────────────────────────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────────────────────
   var tooltip, modal, modalForm, modalSuccess, modalError, submitBtn;
+  var verifiedUsername = null;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function pageTitle() {
@@ -57,9 +61,12 @@
           '<blockquote class="sw-selection"></blockquote>' +
           '<label for="sw-suggestion">Your suggestion <span aria-hidden="true">*</span></label>' +
           '<textarea id="sw-suggestion" rows="4" required placeholder="Describe what should change…"></textarea>' +
+          '<label>Discord identity <span aria-hidden="true">*</span></label>' +
+          '<div id="sw-discord-auth"></div>' +
+          '<p id="sw-discord-error"></p>' +
           '<p class="sw-error" role="alert"></p>' +
           '<div class="sw-actions">' +
-            '<button type="submit" id="sw-submit">Submit</button>' +
+            '<button type="submit" id="sw-submit" disabled>Submit</button>' +
             '<button type="button" id="sw-cancel">Cancel</button>' +
           '</div>' +
         '</form>' +
@@ -82,6 +89,11 @@
     modalSuccess.style.display = 'none';
     modalError.style.display   = 'none';
 
+    // Use event delegation for the Discord button — it gets replaced on each modal open
+    modalForm.addEventListener('click', function (e) {
+      if (e.target.id === 'sw-discord-btn') startDiscordAuth();
+    });
+
     modalForm.addEventListener('submit', onSubmit);
     modal.querySelector('#sw-cancel').addEventListener('click', closeModal);
     modal.querySelector('#sw-close-success').addEventListener('click', closeModal);
@@ -93,19 +105,27 @@
     });
   }
 
+  function renderDiscordBtn() {
+    modal.querySelector('#sw-discord-auth').innerHTML =
+      '<button type="button" id="sw-discord-btn">Login with Discord</button>';
+    modal.querySelector('#sw-discord-error').textContent = '';
+  }
+
   function openModal() {
     var sel = window.getSelection();
     var selectedText = sel ? sel.toString().trim() : '';
 
+    verifiedUsername = null;
     modal.querySelector('.sw-page-url').textContent = window.location.href;
     modal.querySelector('.sw-selection').textContent = selectedText;
     modal.querySelector('#sw-suggestion').value = '';
     modalError.style.display   = 'none';
     modalForm.style.display    = '';
     modalSuccess.style.display = 'none';
-    submitBtn.disabled    = false;
+    submitBtn.disabled    = true;
     submitBtn.textContent = 'Submit';
-    modal.style.display   = '';
+    renderDiscordBtn();
+    modal.style.display = '';
     setTimeout(function () { modal.querySelector('#sw-suggestion').focus(); }, 50);
   }
 
@@ -113,12 +133,53 @@
     modal.style.display = 'none';
   }
 
+  // ── Discord OAuth ─────────────────────────────────────────────────────────
+  function startDiscordAuth() {
+    var state = Math.random().toString(36).slice(2, 10);
+    sessionStorage.setItem('sw-auth-state', state);
+
+    var params = new URLSearchParams({
+      client_id:     DISCORD_CLIENT_ID,
+      redirect_uri:  CALLBACK_URL,
+      response_type: 'code',
+      scope:         'identify guilds',
+      state:         state,
+    });
+
+    window.open(
+      'https://discord.com/oauth2/authorize?' + params.toString(),
+      'discord-auth',
+      'width=500,height=700'
+    );
+  }
+
+  function onAuthMessage(event) {
+    if (event.origin !== WORKER_ORIGIN) return;
+    var data = event.data;
+    if (!data || data.type !== 'discord-auth') return;
+    if (data.state !== sessionStorage.getItem('sw-auth-state')) return;
+
+    var discordError = modal.querySelector('#sw-discord-error');
+
+    if (data.error) {
+      discordError.textContent = data.error;
+      return;
+    }
+
+    verifiedUsername = data.username;
+    discordError.textContent = '';
+    modal.querySelector('#sw-discord-auth').innerHTML =
+      '<span id="sw-discord-verified">✓ ' + verifiedUsername + '</span>';
+    submitBtn.disabled = false;
+    modal.querySelector('#sw-suggestion').focus();
+  }
+
   // ── Submit ────────────────────────────────────────────────────────────────
   function onSubmit(e) {
     e.preventDefault();
     var suggestion   = modal.querySelector('#sw-suggestion').value.trim();
     var selectedText = modal.querySelector('.sw-selection').textContent.trim();
-    if (!suggestion) return;
+    if (!suggestion || !verifiedUsername) return;
 
     submitBtn.disabled    = true;
     submitBtn.textContent = 'Submitting…';
@@ -132,6 +193,7 @@
         pageTitle:    pageTitle(),
         selectedText: selectedText,
         suggestion:   suggestion,
+        submitter:    verifiedUsername,
       }),
     })
       .then(function (r) { return r.json(); })
@@ -167,6 +229,7 @@
   });
 
   window.addEventListener('scroll', hideTooltip, { passive: true });
+  window.addEventListener('message', onAuthMessage);
 
   // ── Init ──────────────────────────────────────────────────────────────────
   if (document.readyState === 'loading') {
