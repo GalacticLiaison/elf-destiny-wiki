@@ -11,8 +11,8 @@ const REPO_NAME         = 'elf-destiny-wiki';
 const ISSUE_LABEL       = 'wiki-suggestion';
 const REPO_NODE_ID      = 'R_kgDOShPfEA';
 const DISC_CAT_ID       = 'DIC_kwDOShPfEM4C9Y3q';
-const DISCORD_CLIENT_ID = '1506415042369945660';  // from Discord Developer Portal
-const DISCORD_GUILD_ID  = '1179053540161880074';   // right-click server → Copy Server ID
+const DISCORD_CLIENT_ID = '1506415042369945660';
+const DISCORD_GUILD_ID  = '1179053540161880074';
 const CALLBACK_URL      = 'https://wiki-auth-69.galacticliaison.workers.dev/callback';
 
 const CORS_HEADERS = {
@@ -55,7 +55,6 @@ async function handleDiscordCallback(url, env) {
       error: 'Invalid OAuth response — please try again.' });
   }
 
-  // Exchange code for access token
   const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -69,13 +68,13 @@ async function handleDiscordCallback(url, env) {
   });
 
   if (!tokenRes.ok) {
+    const errBody = await tokenRes.text();
     return popupResponse({ type: 'discord-auth', state, username: null,
-      error: 'Discord authentication failed — please try again.' });
+      error: 'Discord error ' + tokenRes.status + ': ' + errBody });
   }
 
   const { access_token } = await tokenRes.json();
 
-  // Fetch user identity and guild list in parallel
   const [userRes, guildsRes] = await Promise.all([
     fetch('https://discord.com/api/users/@me',        { headers: { 'Authorization': 'Bearer ' + access_token } }),
     fetch('https://discord.com/api/users/@me/guilds', { headers: { 'Authorization': 'Bearer ' + access_token } }),
