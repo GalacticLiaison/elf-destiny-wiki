@@ -11,6 +11,7 @@
   // ── State ─────────────────────────────────────────────────────────────────
   var modal, modalForm, modalSuccess, modalError, submitBtn, severitySel, gameSel;
   var verifiedUsername = null;
+  var verifiedUserId   = null;
   var currentSelection = { text: '', url: null };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -124,6 +125,7 @@
     };
 
     verifiedUsername = null;
+    verifiedUserId   = null;
     modal.querySelector('.br-page-url').textContent = opts.pageUrl || window.location.href;
 
     var selBlock = modal.querySelector('.br-selection-block');
@@ -199,6 +201,7 @@
     }
 
     verifiedUsername = data.username;
+    verifiedUserId   = data.userId || null;
     discordError.textContent = '';
     modal.querySelector('#br-discord-auth').innerHTML =
       '<span id="br-discord-verified">✓ ' + verifiedUsername + '</span>';
@@ -227,6 +230,7 @@
       severity:    severity,
       description: description,
       submitter:   verifiedUsername,
+      submitterId: verifiedUserId,
     };
     if (currentSelection.text) {
       payload.selectedText = currentSelection.text;

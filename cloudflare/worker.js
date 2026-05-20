@@ -101,7 +101,7 @@ async function handleDiscordCallback(url, env) {
   }
 
   const displayName = (user.global_name || user.username) + ' (@' + user.username + ')';
-  return popupResponse({ type: 'discord-auth', state, username: displayName, error: null });
+  return popupResponse({ type: 'discord-auth', state, username: displayName, userId: user.id, error: null });
 }
 
 function popupResponse(data) {
@@ -234,7 +234,7 @@ async function handleBugReportCreate(request, env) {
   catch { return json({ ok: false, error: 'Invalid JSON' }, 400); }
 
   const { pageUrl, pageSlug, pageTitle, gameTag, severity,
-          description, selectedText, selectionUrl, submitter } = body;
+          description, selectedText, selectionUrl, submitter, submitterId } = body;
 
   if (!pageUrl || !pageSlug || !pageTitle || !gameTag ||
       !severity || !description || !submitter) {
@@ -251,7 +251,7 @@ async function handleBugReportCreate(request, env) {
   const threadName = buildBugThreadName(pageTitle, description);
   const threadBody = buildBugThreadBody({
     pageTitle, pageUrl, selectionUrl, selectedText,
-    description, submitter, severity, pageSlug,
+    description, submitter, submitterId, severity, pageSlug,
   });
 
   const createRes = await fetch(
@@ -311,9 +311,13 @@ async function resolveForumTagIds(env, gameTag, severity) {
   const unresolvedObj = cachedForumTags.find(
     t => t.name.toLowerCase() === 'unresolved'
   );
+  const ongoingObj = cachedForumTags.find(
+    t => t.name.toLowerCase() === 'ongoing issue'
+  );
 
   const ids = [gameTagObj.id, sevTagObj.id];
   if (unresolvedObj) ids.push(unresolvedObj.id);
+  if (ongoingObj)    ids.push(ongoingObj.id);
   return ids;
 }
 
@@ -326,11 +330,14 @@ function buildBugThreadName(pageTitle, description) {
 }
 
 function buildBugThreadBody({ pageTitle, pageUrl, selectionUrl, selectedText,
-                              description, submitter, severity, pageSlug }) {
+                              description, submitter, submitterId, severity, pageSlug }) {
   const linkUrl = selectionUrl || pageUrl;
+  // Use a Discord mention so the reporter gets notified; fall back to the
+  // display name string when no ID is provided (legacy clients).
+  const reporter = submitterId ? '<@' + submitterId + '>' : submitter;
   let body =
     '**Reported from wiki page:** [' + pageTitle + '](' + linkUrl + ')\n' +
-    '**Reporter:** ' + submitter + '\n' +
+    '**Reporter:** ' + reporter + '\n' +
     '**Severity:** ' + severity + '\n\n';
 
   if (selectedText) {
