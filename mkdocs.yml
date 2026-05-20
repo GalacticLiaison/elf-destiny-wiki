@@ -49,6 +49,7 @@ extra_css:
   - assets/stylesheets/extra.css
 
 extra_javascript:
+  - assets/javascripts/bug-report.js
   - assets/javascripts/suggest-edit.js
 
 extra:

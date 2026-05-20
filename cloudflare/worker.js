@@ -1,19 +1,23 @@
-// Elf Destiny Wiki — Suggest-Edit Worker
+// Elf Destiny Wiki — Suggest-Edit + Bug-Report Worker
 //
 // Deploy in the Cloudflare Workers dashboard (workers.cloudflare.com).
 // Secrets to add via Settings → Variables → Secrets:
 //   GITHUB_PAT            — fine-grained PAT (Issues + Discussions read/write)
 //   DISCORD_CLIENT_SECRET — from discord.com/developers/applications
+//   DISCORD_BOT_TOKEN     — bot token from the same Discord application
+//                           (needs Send Messages in Threads + Create Public Threads
+//                            on the #error-reports forum channel)
 
-const ALLOWED_ORIGIN    = 'https://galacticliaison.github.io';
-const REPO_OWNER        = 'GalacticLiaison';
-const REPO_NAME         = 'elf-destiny-wiki';
-const ISSUE_LABEL       = 'wiki-suggestion';
-const REPO_NODE_ID      = 'R_kgDOShPfEA';
-const DISC_CAT_ID       = 'DIC_kwDOShPfEM4C9Y3q';
-const DISCORD_CLIENT_ID = '1506415042369945660';
-const DISCORD_GUILD_ID  = '1179053540161880074';
-const CALLBACK_URL      = 'https://wiki-auth-69.galacticliaison.workers.dev/callback';
+const ALLOWED_ORIGIN        = 'https://galacticliaison.github.io';
+const REPO_OWNER            = 'GalacticLiaison';
+const REPO_NAME             = 'elf-destiny-wiki';
+const ISSUE_LABEL           = 'wiki-suggestion';
+const REPO_NODE_ID          = 'R_kgDOShPfEA';
+const DISC_CAT_ID           = 'DIC_kwDOShPfEM4C9Y3q';
+const DISCORD_CLIENT_ID     = '1506415042369945660';
+const DISCORD_GUILD_ID      = '1179053540161880074';
+const CALLBACK_URL          = 'https://wiki-auth-69.galacticliaison.workers.dev/callback';
+const BUG_REPORT_CHANNEL_ID = '1203067993018597416'; // #error-reports forum channel
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
@@ -38,6 +42,13 @@ export default {
         return new Response('Forbidden', { status: 403 });
       }
       return handleIssueCreate(request, env);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/bug-report') {
+      if (request.headers.get('Origin') !== ALLOWED_ORIGIN) {
+        return new Response('Forbidden', { status: 403 });
+      }
+      return handleBugReportCreate(request, env);
     }
 
     return new Response('Not found', { status: 404 });
@@ -211,6 +222,129 @@ async function postToDiscussion(pat, pageUrl, issueTitle, issueUrl) {
      }`,
     { discussionId, body: commentBody }
   );
+}
+
+// ── Bug-report (Discord forum thread) creation ────────────────────────────
+
+let cachedForumTags = null; // cached for the worker instance lifetime
+
+async function handleBugReportCreate(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return json({ ok: false, error: 'Invalid JSON' }, 400); }
+
+  const { pageUrl, pageSlug, pageTitle, gameTag, severity,
+          description, selectedText, selectionUrl, submitter } = body;
+
+  if (!pageUrl || !pageSlug || !pageTitle || !gameTag ||
+      !severity || !description || !submitter) {
+    return json({ ok: false, error: 'Missing fields' }, 400);
+  }
+
+  let tagIds;
+  try {
+    tagIds = await resolveForumTagIds(env, gameTag, severity);
+  } catch (e) {
+    return json({ ok: false, error: 'Could not resolve forum tags: ' + e.message }, 502);
+  }
+
+  const threadName = buildBugThreadName(pageTitle, description);
+  const threadBody = buildBugThreadBody({
+    pageTitle, pageUrl, selectionUrl, selectedText,
+    description, submitter, severity, pageSlug,
+  });
+
+  const createRes = await fetch(
+    'https://discord.com/api/v10/channels/' + BUG_REPORT_CHANNEL_ID + '/threads',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bot ' + env.DISCORD_BOT_TOKEN,
+        'Content-Type':  'application/json',
+        'User-Agent':    'elf-destiny-wiki-bug-report',
+      },
+      body: JSON.stringify({
+        name: threadName,
+        message: { content: threadBody },
+        applied_tags: tagIds,
+      }),
+    }
+  );
+
+  if (!createRes.ok) {
+    const errBody = await createRes.text();
+    return json({ ok: false, error: 'Discord API error ' + createRes.status + ': ' + errBody }, 502);
+  }
+
+  const thread = await createRes.json();
+  const threadUrl = 'https://discord.com/channels/' + DISCORD_GUILD_ID + '/' + thread.id;
+  return json({ ok: true, threadUrl: threadUrl, threadId: thread.id });
+}
+
+async function resolveForumTagIds(env, gameTag, severity) {
+  if (!cachedForumTags) {
+    const res = await fetch(
+      'https://discord.com/api/v10/channels/' + BUG_REPORT_CHANNEL_ID,
+      { headers: {
+          'Authorization': 'Bot ' + env.DISCORD_BOT_TOKEN,
+          'User-Agent':    'elf-destiny-wiki-bug-report',
+      } }
+    );
+    if (!res.ok) throw new Error('channel fetch failed (' + res.status + ')');
+    const channel = await res.json();
+    cachedForumTags = channel.available_tags || [];
+  }
+
+  const gameTagObj = cachedForumTags.find(
+    t => t.name.toLowerCase() === gameTag.toLowerCase()
+  );
+  if (!gameTagObj) throw new Error('game tag not found: ' + gameTag);
+
+  // Severity input is "Sev 1" / "Sev 2" / "Sev 3"; forum tag names are
+  // "Sev 1 - Crashes Game" etc. (may contain extra whitespace).
+  const sevMatch = severity.match(/^sev\s*(\d)/i);
+  if (!sevMatch) throw new Error('invalid severity format: ' + severity);
+  const sevPattern = new RegExp('^sev\\s*' + sevMatch[1] + '\\b', 'i');
+  const sevTagObj = cachedForumTags.find(t => sevPattern.test(t.name));
+  if (!sevTagObj) throw new Error('severity tag not found: ' + severity);
+
+  const unresolvedObj = cachedForumTags.find(
+    t => t.name.toLowerCase() === 'unresolved'
+  );
+
+  const ids = [gameTagObj.id, sevTagObj.id];
+  if (unresolvedObj) ids.push(unresolvedObj.id);
+  return ids;
+}
+
+function buildBugThreadName(pageTitle, description) {
+  const flat = description.replace(/\s+/g, ' ').trim();
+  const snippet = flat.length > 50 ? flat.slice(0, 47) + '…' : flat;
+  let name = '[wiki] ' + pageTitle + ': ' + snippet;
+  if (name.length > 100) name = name.slice(0, 97) + '…'; // Discord thread name limit
+  return name;
+}
+
+function buildBugThreadBody({ pageTitle, pageUrl, selectionUrl, selectedText,
+                              description, submitter, severity, pageSlug }) {
+  const linkUrl = selectionUrl || pageUrl;
+  let body =
+    '**Reported from wiki page:** [' + pageTitle + '](' + linkUrl + ')\n' +
+    '**Reporter:** ' + submitter + '\n' +
+    '**Severity:** ' + severity + '\n\n';
+
+  if (selectedText) {
+    const MAX_SEL = 1200; // leave room for the rest under Discord's 2000-char message limit
+    const trimmed = selectedText.length > MAX_SEL
+      ? selectedText.slice(0, MAX_SEL) + '…'
+      : selectedText;
+    body += '**Highlighted from wiki:**\n> ' + trimmed.replace(/\n/g, '\n> ') + '\n\n';
+  }
+
+  body += '---\n\n' + description + '\n\n<!-- wiki-page-slug: ' + pageSlug + ' -->';
+
+  if (body.length > 1990) body = body.slice(0, 1987) + '…';
+  return body;
 }
 
 // ── Response helper ───────────────────────────────────────────────────────

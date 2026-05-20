@@ -20,14 +20,38 @@
   function buildTooltip() {
     tooltip = document.createElement('div');
     tooltip.id = 'sw-tooltip';
-    tooltip.innerHTML = '<button type="button">✏️ Suggest an edit</button>';
+    tooltip.innerHTML =
+      '<button type="button" class="sw-tt-suggest">✏️ Suggest an edit</button>' +
+      '<button type="button" class="sw-tt-bug">🐛 Report error in mod</button>';
     tooltip.style.display = 'none';
     document.body.appendChild(tooltip);
 
-    tooltip.querySelector('button').addEventListener('click', function (e) {
+    tooltip.querySelector('.sw-tt-suggest').addEventListener('click', function (e) {
       e.stopPropagation();
       hideTooltip();
       openModal();
+    });
+
+    tooltip.querySelector('.sw-tt-bug').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var sel = window.getSelection();
+      var selectedText = sel ? sel.toString().trim() : '';
+      hideTooltip();
+      if (!window.openBugReportModal) return;
+
+      var basePath = window.location.href.split('#')[0];
+      var fragment = '#:~:text=' + encodeURIComponent(selectedText.slice(0, 80));
+      var slug = window.location.pathname
+        .replace(/^\/elf-destiny-wiki\//, '')
+        .replace(/\/$/, '') || 'index';
+
+      window.openBugReportModal({
+        pageUrl:      window.location.href,
+        pageTitle:    pageTitle(),
+        pageSlug:     slug,
+        selectedText: selectedText,
+        selectionUrl: basePath + fragment,
+      });
     });
   }
 
