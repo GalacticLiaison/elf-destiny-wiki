@@ -6,63 +6,35 @@ tags:
 
 # World History
 
-The story of Elf Destiny stretches back across ages — from the first arrival of
+The story of elves and men stretches back across ages — from the first arrival of
 elves on Earth to the diminished, scattered people they have become by the start of
 a campaign.
 
 ## The First Age
 
-At the dawn of recorded civilization — an era believed to have begun roughly
-**300,000 years ago** — both elves and humans came to Earth through a great portal
-from another realm. The Divine Spark had added this world to its domain, seeded it
-with life, and linked it into a vast network of portals between worlds. The elves may
-have arrived even before the first humans. This opening era is called the **First Age**.
+The First Age begins at the dawn of recorded civilization, an era believed to have begun roughly
+300,000 years ago, when both elves and humans first entered Earth from a great portal
+linked to another realm. It is believed that the Divine Spark had added this world to its domain 
+and linked it with vast network of portals between many worlds. The elves may
+have arrived even before the first humans.
 
-The First Age and the ages that followed it are known collectively as the
-**Elder Ages** — a vast and mostly-forgotten span of early civilization. Most of what
-happened in them is lost.
+The First Age was the beginning of the Elder Days, a golden era of elven civilization that is only remembered now as myth.  This time was marked by marvelous creation that likes of which are not to be seen in the world today.
+Though the Elder Days is the true origin of civilization and shaped the very fabric of the world, few alive now believe this time to have actually existed.
 
-Since that beginning, countless elven and human empires have risen and fallen, most
-of them now lost entirely to time.
+## Golden Age of Elves
 
-## A world-spanning civilization
+During this period the elves used their power to craft artifacts of immense value.  As the elven empire reached its zenith in majesty, their smiths saught ever to surpass their forefathers in their craft.  At the height of their power, the most powerful artifacts were created, a few of the which were imbued with a form of consciousness that allowed them to communicate and alter the mood of their bearers.  The secrets that allowed this level of craft are now lost to civilization, and even the most skilled among us today are scarcely able to rival the least of the works from the Elder Days.
 
-Ancient elven civilization was never a regional affair — it was **planetary**.
-Elves lived on every corner of the earth and raised countless empires across it. The
-ruins of their kingdoms, holy places, and lost cities lie scattered across every
-continent, from the Atlantic to the far Pacific.
+While little is known of human-elf relations in the First Age, in the later time of the Elder Days a persistent theme began to emerge: elven superiority.  This superiority mindset, coupled with what would become a golden age of technology and magic, relegated humans to an oppresed servant caste.  Extremely long lifespans allowed the elves to maintain their power dynamic over humans for centuries, even with the humans populating at a much faster rate.  While human conditions progressively worsened, the ancient elven empire as a whole entered into a new golden age of power and prosperity.
 
-One grim pattern runs through that long history: most lost elven civilizations fell
-not to outside conquest but to **their own magical hubris** — runaway experiments,
-catastrophic rituals, and ruinous civil wars.
 
-## The Ancient Elven Empire
+## Ending of the Elder Days
 
-At the height of elven power, a great **Elf Emperor** ruled from a vast
-fortress-stronghold that would in time become his own burial place. He bore the
-**Sigil of the Realm Lord** — a radiant crystal amulet that glowed with divine power
-and stood as the ultimate symbol of elven dominion over the world.
+While the elves increased their power to new heights, the wisdom that they once possessed began to fade.  Proud lords vied with one another for dominion, at times wielding artifacts of such immense power that the terrain of the earth was marred.  As strife became commonplace and wars constant the human population began to suffer greatly from the infighting.
 
-The elves of this age were extraordinarily advanced, perhaps more so than any
-civilization since, and their empire may have endured for thousands of years. They
-were marked by their bond with the Divine Spark, their long lives, and their pursuit
-of Ascension toward ever higher forms of being.
+At this time, humans began to yearn for the days when they were treated as equals of the elves.  Many songs were written in remembrance of great heroes of old that fought alongside the elves.  Slowly, the humans began to stir from their oppression and find that they were strong.
 
-## The Great Rebellion and the Fall
-
-The Elven Empire was brought down by a **massive human rebellion**. In the chaos
-that followed:
-
-- Most elves were **slain or forced to flee** back through the Grand Portal to the
-  other realms — a mass retreat remembered as the **Great Exodus**.
-- A **small number of elves remained** behind in the wilds, living quietly, cut off
-  from their departed kin.
-- With the elves gone, the rebels **destroyed the vital components of the Grand
-  Portal**, severing the gateway between worlds.
-
-Over the centuries that followed, elven lore decayed into myth and children's
-stories. To most of the modern world, the elves are *"nothing more than children's
-fairy tales."*
+...needs to continue...
 
 ## The Long Silence
 
@@ -107,3 +79,4 @@ the shared origin of elves and humans through the portal is just another fairy t
 - [The Portal Network](portal-network.md) — the gateway whose destruction ended the First Age.
 - [The Expedition Storyline](expedition-storyline.md) — how the player's story takes up this history.
 - [Ancient History & Lost Civilizations](ancient-history-and-lost-civilizations.md) — the deep past told through ruins.
+
