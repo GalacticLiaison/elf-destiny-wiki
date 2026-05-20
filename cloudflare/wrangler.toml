@@ -1,0 +1,17 @@
+# Wrangler config for the wiki-auth-69 worker.
+#
+# Local deploy:   npx wrangler deploy           (run from this cloudflare/ directory)
+# Set a secret:   npx wrangler secret put NAME  (prompts for value)
+# Tail live logs: npx wrangler tail
+#
+# CI deploy is handled by .github/workflows/deploy-worker.yml on push to main.
+#
+# FILL IN: replace YOUR_ACCOUNT_ID below with the Account ID shown on the
+# right sidebar of the Cloudflare dashboard home page (it's not a secret —
+# safe to commit). After that, this file is set.
+
+name               = "wiki-auth-69"
+main               = "worker.js"
+compatibility_date = "2026-05-01"
+account_id         = "41fbe14cde96c94857194251015d1134"
+workers_dev        = true
